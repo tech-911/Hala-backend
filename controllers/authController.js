@@ -1,88 +1,35 @@
-const { User } = require("../model/User");
-const { Booking } = require("../model/Booking");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+require("dotenv").config(); //dotenv import
+const { User } = require("../model/User"); //users model import
+const { Booking } = require("../model/Booking"); //booking model import
+const bcrypt = require("bcryptjs"); //bcrypt import
+const jwt = require("jsonwebtoken"); //jwt import
 const {
   registerValidationMethod,
   loginValidationMethod,
-  changePasswordValidationMethod,
-  editUserInfoValidationMethod,
-} = require("../validations/validation");
+} = require("../validations/validation"); //joi validation import
+const { OAuth2Client } = require("google-auth-library"); //oauth for google import
+var twilio = require("twilio")(
+  process.env.TWILIO_SID,
+  process.env.TWILIO_TOKEN
+); //twilio import
+const cloudinary = require("cloudinary").v2; //cloudinary import
 
+// auxilliary code for hashing password
+//  const salt = await bcrypt.genSalt(10);
+//  const hashedPassword = await bcrypt.hash(password, salt);
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const index = (req, res) => {
   console.log("a get request was made to /");
-  res.send("hellow world from the router flile");
-};
-
-const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
-  //===============validation===============
-
-  const { error, value } = registerValidationMethod(req.body);
-
-  if (error) return res.status(400).send(error.details[0].message);
-
-  //===============Checking existence of user===============
-
-  const userExist = await User.findOne({ email: email });
-
-  if (userExist) return res.status(400).send("Email already exists");
-
-  //=====================hash password========================
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  //======================saving data on DB=======================
-  try {
-    const user = await new User({ name, email, hashedPassword, role });
-    const saveValue = await user.save();
-    console.log(saveValue);
-    await res.send(saveValue);
-  } catch (err) {
-    console.log(err);
-    res.status(404).send(err);
-  }
-
-  //===============create new user on DB===============
-};
-
-const admin_register = async (req, res) => {
-  const { name, email, password, role } = req.body;
-  //===============validation===============
-
-  const { error, value } = registerValidationMethod(req.body);
-
-  if (error) return res.status(400).send(error.details[0].message);
-
-  //===============Checking existence of user===============
-
-  const userExist = await User.findOne({ email: email });
-
-  if (userExist) return res.status(400).send("Email already exists");
-
-  //=====================hash password========================
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  //======================saving data on DB=======================
-  try {
-    const user = await new User({ name, email, hashedPassword, role });
-    const saveValue = await user.save();
-    console.log(saveValue);
-    await res.send(saveValue);
-  } catch (err) {
-    console.log(err);
-    res.status(404).send(err);
-  }
+  res.send("Welcome to halal match making 💗");
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
   //===============validation===============
 
-  const { error, value } = loginValidationMethod(req.body);
-
+  const { error } = loginValidationMethod(req.body);
   if (error) return res.status(400).send(error.details[0].message);
+  const { email } = req.body;
 
   //===============Checking existence of user by email===============
 
@@ -90,121 +37,183 @@ const login = async (req, res) => {
 
   if (!user) return res.status(400).send("Email doesnt exists");
 
-  //===============Comapring user input password with that registered on the database===============
-  const validPassword = await bcrypt.compare(password, user.hashedPassword);
-  if (!validPassword) return res.status(400).send("Invalid password");
-
   // Creating jwt token
   const jwtSecretKey = process.env.TOKEN_SECRET;
   const token = jwt.sign({ _id: user._id }, jwtSecretKey);
-  let newUser = { user, token };
-  res.header("auth-token", token).send(newUser);
+  user.token = token;
+  await user.save();
+  res.send(user);
 };
+const logout = async (req, res) => {
+  //===============validation===============
 
-const change_password = async (req, res) => {
-  //=====================get user request data========================
-
-  const { email, old_password, new_password } = req.body;
-
-  //===================Validate user request object===========================
-
-  const { error, value } = changePasswordValidationMethod(req.body);
+  const { error } = loginValidationMethod(req.body);
   if (error) return res.status(400).send(error.details[0].message);
+  const { email } = req.body;
 
-  //=====================get user object from db for specified user email========================
+  //===============Checking existence of user by email===============
 
   let user = await User.findOne({ email: email });
-  if (!user) return res.status(400).send("unAuthorized user");
 
-  //====================check if the old password is correct========================
+  if (!user) return res.status(400).send("Email doesnt exists");
 
-  const validPassword = await bcrypt.compare(old_password, user.hashedPassword);
-  if (!validPassword) return res.status(400).send("Invalid password");
-
-  //=====================hash password========================
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(new_password, salt);
-
-  //======================saving new password to DB=======================
-
-  User.updateOne({ email: email }, { hashedPassword: hashedPassword })
-    .then((result) => {
-      console.log(result);
-      res.send("password changed");
-    })
-    .catch((error) => {
-      console.error(error);
-      res.status(400).send(error);
-    });
+  user.token = null;
+  await user.save();
+  res.send(user);
 };
-
-//===================Edit user info controller===========================
-
-const edit_user_info = async (req, res) => {
-  //=====================get user request data========================
-
-  const { name, email, _id } = req.body;
-
-  //===================Validate user request object===========================
-
-  const { error, value } = editUserInfoValidationMethod(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
-  //===================check and update user db===========================
+const googlesignup = async (req, res) => {
+  const { token } = req.body;
   try {
-    const response = await User.updateMany(
-      { _id: _id },
-      { $set: { name: name, email: email } }
-    );
-    console.log(response);
-    res.send(response);
-  } catch (err) {
-    return res.status(400).send(err);
-  }
-};
-
-//===================Delete account controller (Deilcate)===========================
-
-const delete_user_account = async (req, res) => {
-  const { _id } = req.body;
-
-  try {
-    const response1 = await Booking.deleteMany({
-      user_id: _id,
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
     });
+    const payload = ticket.getPayload();
+    const userid = payload["sub"];
+    // If request specified a G Suite domain:
+    // const domain = payload['hd'];
 
-    console.log(response1);
-
-    const response2 = await User.deleteMany({
-      _id: _id,
-    });
-    console.log(response2);
-    res.send("Account Deleted");
+    const user = await User.findOne({ email: payload.email });
+    if (user) {
+      console.log(user);
+      res.send(user);
+    } else {
+      try {
+        const user = await new User({
+          name: payload.name,
+          email: payload.email,
+          provider: "google",
+        });
+        const saveValue = await user.save();
+        console.log(saveValue);
+        res.send(saveValue);
+      } catch (err) {
+        console.log(err);
+        res.status(400).send(err);
+      }
+    }
   } catch (err) {
     console.log(err);
-    return res.status(400).send(err);
+    res.status(400).send(err);
+  }
+};
+const facebooksignup = async (req, res) => {
+  res.send(req.user || req.saveValue);
+};
+
+const phonesignup = async (req, res) => {
+  const { otp, phone_no } = req.body;
+  const check = await User.findOne({ phone_number: phone_no });
+  if (check) {
+    console.log(check);
+    return res.send({ message: "user exist", check });
+  }
+  const user = await User.findOne({ "phone_key.otp": otp });
+  if (!user) return res.status(400).send("Wrong OTP");
+  if (new Date().getTime() - user.phone_key.timestamp > 390000) {
+    return res.status(400).send("OTP expired");
+  }
+  user.phone_number = phone_no;
+  user.phone_key = {};
+  const saveValue = await user.save();
+  res.send("success...");
+};
+
+const otp = async (req, res) => {
+  const { phone_no } = req.body;
+  const user = await User.findOne({ phone_number: phone_no });
+  if (user) {
+    console.log(user);
+    res.send({ message: "user exist", user });
+  } else {
+    let otp = "";
+    for (let i = 0; i < 6; i++) {
+      const digit = Math.floor(Math.random() * 10);
+      otp += digit.toString();
+    }
+    const timestamp = new Date().getTime();
+    try {
+      const user = await new User({
+        phone_key: { timestamp, otp },
+      });
+      const saveValue = await user.save();
+      console.log(saveValue);
+    } catch (err) {
+      console.log(err);
+      res.status(400).send(err);
+    }
+
+    twilio.messages
+      .create({
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phone_no,
+        body: `Hala match maker OTP: ${otp}`,
+      })
+      .then((response) => {
+        console.log(response);
+        res.send(`OTP sent to ${phone_no}. OTP expires in 6 minuites`);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(400).send(err);
+      });
   }
 };
 
-const get_admin_list = (req, res) => {
-  User.find({ role: "admin" }, function (err, admins) {
-    if (err) {
-      console.error(err);
-      return res.status(400).send(err);
-    } else {
-      console.log(admins);
-      res.send(admins);
+const register = async (req, res) => {
+  const {
+    name,
+    dob,
+    gender,
+    height,
+    marital_status,
+    location,
+    profession,
+    email,
+    phone_no,
+    photos,
+  } = req.body;
+  cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
+  });
+  const pictures = photos.map(async (value, id) => {
+    try {
+      const imgurl = await cloudinary.uploader.upload(value?.image?.path || "");
+      console.log(imgurl);
+      return imgurl;
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error uploading image" });
     }
   });
+  const user = await User.findOne({ email: email });
+
+  if (user) {
+    user.name = name;
+    user.dob = dob;
+    user.gender = gender;
+    user.height = height;
+    user.marital_status = marital_status;
+    user.location = location;
+    user.profession = profession;
+    user.phone_no = phone_no;
+    user.photo = pictures;
+    user.status = "done";
+  }
+  const savedinfo = await user.save();
+  console.log(savedinfo);
+  res.send(savedinfo);
 };
 
 module.exports = {
   index,
-  register,
-  admin_register,
   login,
-  change_password,
-  edit_user_info,
-  delete_user_account,
-  get_admin_list,
+  facebooksignup,
+  googlesignup,
+  logout,
+  phonesignup,
+  otp,
+  register,
 };
