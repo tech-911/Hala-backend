@@ -1,6 +1,6 @@
 const express = require("express");
 const authRoute = require("./routes/auth");
-const userActionsRoute = require("./routes/userActions");
+// const userActionsRoute = require("./routes/userActions");
 const app = express();
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -60,6 +60,6 @@ passport.use(
 app.use(express.json());
 // app.use(express.urlencoded({ extended: true })); //middleware for parsing postbody format to object format
 app.use("/api/auth", authRoute);
-app.use("/api/useraction", userActionsRoute);
+// app.use("/api/useraction", userActionsRoute);
 // app.use("/api/posts", postRoute);
 app.listen(4000);
