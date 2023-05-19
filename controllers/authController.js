@@ -225,27 +225,27 @@ const register = async (req, res) => {
       const savedinfo = await user.save();
       console.log(savedinfo);
 
-      //----------Clear files in upload folder to prevent memory overload
+      // //----------Clear files in upload folder to prevent memory overload
 
-      const folderPath = "uploads";
-      fs.readdir(folderPath, (err, files) => {
-        if (err) {
-          console.error("Error reading upload folder:", err);
-          return res.status(400).send(err);
-        }
-        console.log("files: ", files);
-        // Delete each file in the upload folder
-        files.forEach((file) => {
-          fs.unlink(path.join(folderPath, file), (err) => {
-            if (err) {
-              console.error(`Error deleting file ${file}:`, err);
-            } else {
-              console.log(`Deleted file: ${file}`);
-            }
-          });
-        });
-      });
-      //-----------------End of cleanup
+      // const folderPath = "uploads";
+      // fs.readdir(folderPath, (err, files) => {
+      //   if (err) {
+      //     console.error("Error reading upload folder:", err);
+      //     return res.status(400).send(err);
+      //   }
+      //   console.log("files: ", files);
+      //   // Delete each file in the upload folder
+      //   files.forEach((file) => {
+      //     fs.unlink(path.join(folderPath, file), (err) => {
+      //       if (err) {
+      //         console.error(`Error deleting file ${file}:`, err);
+      //       } else {
+      //         console.log(`Deleted file: ${file}`);
+      //       }
+      //     });
+      //   });
+      // });
+      // //-----------------End of cleanup
 
       //------------Send back completely registered user data to user
       res.send(savedinfo);
