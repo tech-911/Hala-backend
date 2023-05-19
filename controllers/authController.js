@@ -13,6 +13,8 @@ var twilio = require("twilio")(
   process.env.TWILIO_TOKEN
 ); //twilio import
 const cloudinary = require("cloudinary").v2; //cloudinary import
+const fs = require("fs");
+const path = require("path");
 
 // auxilliary code for hashing password
 //  const salt = await bcrypt.genSalt(10);
@@ -184,17 +186,6 @@ const register = async (req, res) => {
       .send({ error: "No image files provided. Needs at least 2 images" });
   }
 
-  // const pictures = req.files.map(async (file) => {
-  //   try {
-  //     const imgurl = await cloudinary.uploader.upload(file.path);
-  //     console.log(imgurl.url);
-  //     return imgurl.url;
-  //   } catch (error) {
-  //     console.log(error);
-  //     return res.status(500).json({ message: "Error uploading image" });
-  //   }
-  // });
-
   const promises = req.files.map((file) => {
     // Upload each file to Cloudinary
     return new Promise((resolve, reject) => {
@@ -228,9 +219,34 @@ const register = async (req, res) => {
         user.phone_no = phone_no;
         user.photo = pictures;
         user.status = "done";
+      } else {
+        res.status(400).send("No User specified. Try re-signup");
       }
       const savedinfo = await user.save();
       console.log(savedinfo);
+
+      //----------Clear files in upload folder to prevent memory overload
+
+      const folderPath = "uploads";
+      fs.readdir(folderPath, (err, files) => {
+        if (err) {
+          console.error("Error reading upload folder:", err);
+          return res.status(400).send(err);
+        }
+        console.log("files: ", files);
+        // Delete each file in the upload folder
+        files.forEach((file) => {
+          fs.unlink(path.join(folderPath, file), (err) => {
+            if (err) {
+              console.error(`Error deleting file ${file}:`, err);
+            } else {
+              console.log(`Deleted file: ${file}`);
+            }
+          });
+        });
+      });
+
+      //------------Send back completely registered user data to user
       res.send(savedinfo);
     })
     .catch((error) => {
