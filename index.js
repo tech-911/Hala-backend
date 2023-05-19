@@ -26,35 +26,35 @@ mongoose
   });
 
 // Facebook authentication
-passport.use(
-  new FacebookTokenStrategy(
-    {
-      clientID: process.env.FACEBOOK_CLIENT_ID,
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-    },
-    async (accessToken, refreshToken, profile, cb) => {
-      const user = await User.findOne({ email: profile.emails[0].value });
-      if (user) {
-        console.log(user);
-        cb(null, user);
-      } else {
-        try {
-          const user = await new User({
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            provider: "facebook",
-          });
-          const saveValue = await user.save();
-          console.log(saveValue);
-          cb(null, saveValue);
-        } catch (err) {
-          console.log(err);
-          cb(err, null);
-        }
-      }
-    }
-  )
-);
+// passport.use(
+//   new FacebookTokenStrategy(
+//     {
+//       clientID: process.env.FACEBOOK_CLIENT_ID,
+//       clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+//     },
+//     async (accessToken, refreshToken, profile, cb) => {
+//       const user = await User.findOne({ email: profile.emails[0].value });
+//       if (user) {
+//         console.log(user);
+//         cb(null, user);
+//       } else {
+//         try {
+//           const user = await new User({
+//             name: profile.displayName,
+//             email: profile.emails[0].value,
+//             provider: "facebook",
+//           });
+//           const saveValue = await user.save();
+//           console.log(saveValue);
+//           cb(null, saveValue);
+//         } catch (err) {
+//           console.log(err);
+//           cb(err, null);
+//         }
+//       }
+//     }
+//   )
+// );
 
 //Middleware
 app.use(express.json());

@@ -1,7 +1,7 @@
 {
   "name": "hala-backend",
   "version": "1.0.0",
-  "description": "Hala match maker application",
+  "description": "Hala match",
   "main": "index.js",
   "engines": {
     "node": "14.x"
