@@ -245,6 +245,7 @@ const register = async (req, res) => {
           });
         });
       });
+      //-----------------End of cleanup
 
       //------------Send back completely registered user data to user
       res.send(savedinfo);
