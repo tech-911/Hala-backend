@@ -38,7 +38,7 @@ const userSchema = new Schema({
     max: 255,
     min: 5,
   },
-  phone_number: {
+  phone_no: {
     type: String,
     required: false,
   },

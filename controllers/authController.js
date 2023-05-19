@@ -103,7 +103,7 @@ const facebooksignup = async (req, res) => {
 
 const phonesignup = async (req, res) => {
   const { otp, phone_no } = req.body;
-  const check = await User.findOne({ phone_number: phone_no });
+  const check = await User.findOne({ phone_no: phone_no });
   if (check) {
     console.log(check);
     return res.send({ message: "user exist", check });
@@ -113,7 +113,7 @@ const phonesignup = async (req, res) => {
   if (new Date().getTime() - user.phone_key.timestamp > 390000) {
     return res.status(400).send("OTP expired");
   }
-  user.phone_number = phone_no;
+  user.phone_no = phone_no;
   user.phone_key = {};
   const saveValue = await user.save();
   res.send("success...");
@@ -121,7 +121,7 @@ const phonesignup = async (req, res) => {
 
 const otp = async (req, res) => {
   const { phone_no } = req.body;
-  const user = await User.findOne({ phone_number: phone_no });
+  const user = await User.findOne({ phone_no: phone_no });
   if (user) {
     console.log(user);
     res.send({ message: "user exist", user });
@@ -171,40 +171,72 @@ const register = async (req, res) => {
     profession,
     email,
     phone_no,
-    photos,
   } = req.body;
   cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.API_KEY,
     api_secret: process.env.API_SECRET,
   });
-  const pictures = photos.map(async (value, id) => {
-    try {
-      const imgurl = await cloudinary.uploader.upload(value?.image?.path || "");
-      console.log(imgurl);
-      return imgurl;
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ message: "Error uploading image" });
-    }
-  });
-  const user = await User.findOne({ email: email });
 
-  if (user) {
-    user.name = name;
-    user.dob = dob;
-    user.gender = gender;
-    user.height = height;
-    user.marital_status = marital_status;
-    user.location = location;
-    user.profession = profession;
-    user.phone_no = phone_no;
-    user.photo = pictures;
-    user.status = "done";
+  if (!req.files || req.files.length === 0) {
+    return res
+      .status(400)
+      .send({ error: "No image files provided. Needs at least 2 images" });
   }
-  const savedinfo = await user.save();
-  console.log(savedinfo);
-  res.send(savedinfo);
+
+  // const pictures = req.files.map(async (file) => {
+  //   try {
+  //     const imgurl = await cloudinary.uploader.upload(file.path);
+  //     console.log(imgurl.url);
+  //     return imgurl.url;
+  //   } catch (error) {
+  //     console.log(error);
+  //     return res.status(500).json({ message: "Error uploading image" });
+  //   }
+  // });
+
+  const promises = req.files.map((file) => {
+    // Upload each file to Cloudinary
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload(file.path, (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  });
+
+  // Wait for all upload promises to resolve
+  Promise.all(promises)
+    .then(async (results) => {
+      const pictures = results.map((value) => {
+        return value?.secure_url;
+      });
+      console.log("pictures: ", pictures);
+      const user = await User.findOne({ email: email });
+
+      if (user) {
+        user.name = name;
+        user.dob = dob;
+        user.gender = gender;
+        user.height = height;
+        user.marital_status = marital_status;
+        user.location = location;
+        user.profession = profession;
+        user.phone_no = phone_no;
+        user.photo = pictures;
+        user.status = "done";
+      }
+      const savedinfo = await user.save();
+      console.log(savedinfo);
+      res.send(savedinfo);
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(400).send(error);
+    });
 };
 
 module.exports = {

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const verify = require("../verification/verifyToken");
 const passport = require("passport");
+const multer = require("multer");
 const {
   index,
   login,
@@ -10,8 +11,10 @@ const {
   logout,
   phonesignup,
   otp,
-  register
+  register,
 } = require("../controllers/authController");
+
+const upload = multer({ dest: "uploads/" });
 
 router.get("/", index); //index
 
@@ -28,6 +31,6 @@ router.post("/login", login);
 router.post("/logout", logout);
 router.post("/phone", phonesignup);
 router.post("/otp", otp);
-router.post("/register", register);
+router.post("/register", upload.array("image"), register);
 
 module.exports = router;
