@@ -93,4 +93,48 @@ const Reacted = async (req, res) => {
   }
 };
 
-module.exports = { GetAllUsersByGender, Reacted };
+const getLikedMeData = async (req, res) => {
+  const { email } = req.body;
+  let followers = [];
+  let users = [];
+
+  try {
+    const result = await UserAction.find({ liked: email });
+    followers = result.map((value) => {
+      return value.email;
+    });
+    try {
+      users = await User.find();
+      const userThatLikedMe = users.filter((value) => {
+        return followers.includes(value.email);
+      });
+      res.send(userThatLikedMe);
+    } catch (err) {
+      res.status(400).send(err);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "An error occurred" });
+  }
+};
+
+const getLikedData = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const iliked = await UserAction.findOne({ email: email });
+    const users = await User.find();
+    const userThatILiked = users.filter((value) => {
+      return iliked.liked.includes(value.email);
+    });
+    res.send(userThatILiked);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+};
+
+module.exports = {
+  GetAllUsersByGender,
+  Reacted,
+  getLikedMeData,
+  getLikedData,
+};
