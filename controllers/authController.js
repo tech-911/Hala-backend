@@ -218,6 +218,7 @@ const register = async (req, res) => {
         user.profession = profession;
         user.phone_no = phone_no;
         user.photo = pictures;
+        user.email = email;
         user.status = "done";
       } else {
         res.status(400).send("No User specified. Try re-signup");
@@ -256,6 +257,152 @@ const register = async (req, res) => {
     });
 };
 
+const editProfile = async (req, res) => {
+  const {
+    name,
+    email,
+    date,
+    gender,
+    height,
+    relationship,
+    children,
+    plan,
+    biography,
+    description,
+    blood,
+    genotype,
+    skin,
+    practice,
+    pray,
+    alcohol,
+    smoke,
+    interest,
+    personality,
+    education,
+    profession,
+    ethnicity,
+    language,
+  } = req.body;
+
+  const dataSaveMethod = async (pictures) => {
+    try {
+      const user = await User.findOne({ email: email });
+      if (user) {
+        user.name = name;
+        if (date) {
+          user.dob = date;
+        }
+        user.related.relationship = relationship;
+        user.related.children = children;
+        console.log("user.related call: ", user.related);
+        user.related.marragePlans = plan;
+        user.related.biography = biography;
+        user.related.description = description;
+        user.related.blood = blood;
+        user.related.genotype = genotype;
+        user.related.skin = skin;
+        user.related.religion = practice;
+        user.related.pray = pray;
+        user.related.alcohol = alcohol;
+        user.related.smoke = smoke;
+        user.related.interest = interest;
+        user.related.personality = personality;
+        user.related.education = education;
+        user.related.ethnicity = ethnicity;
+        user.related.language = language;
+        user.gender = gender;
+        user.height = height;
+        user.profession = profession;
+        user.email = email;
+        if (pictures) {
+          user.photo = pictures;
+        }
+
+        const savedinfo = await user.save();
+        console.log(savedinfo);
+        return savedinfo;
+      } else {
+        res.status(400).send("No User specified.");
+      }
+    } catch (err) {
+      console.log(err);
+      res.status(400).send(err);
+    }
+  };
+
+  cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
+  });
+
+  if (!req.files || req.files.length === 0) {
+    dataSaveMethod()
+      .then((value) => console.log("saved edit without pic: ", value))
+      .then((value2) => res.send(value2))
+      .catch((err) => res.status(400).send(err));
+  } else {
+    const promises = req.files.map((file) => {
+      // Upload each file to Cloudinary
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload(file.path, (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      });
+    });
+
+    Promise.all(promises)
+      .then(async (results) => {
+        const pictures = results.map((value) => {
+          return value?.secure_url;
+        });
+        console.log("pictures: ", pictures);
+        let resultValue = "";
+        dataSaveMethod(pictures)
+          .then((response0) => {
+            console.log("saved values with images: ", response0);
+          })
+          .then((response1) => {
+            resultValue = response1;
+          })
+          .catch((err) => res.status(400).send(err));
+          
+        //----------Clear files in upload folder to prevent memory overload
+
+        const folderPath = "uploads1";
+        fs.readdir(folderPath, (err, files) => {
+          if (err) {
+            console.error("Error reading upload folder:", err);
+            return res.status(400).send(err);
+          }
+          console.log("files: ", files);
+          // Delete each file in the upload folder
+          files.forEach((file) => {
+            fs.unlink(path.join(folderPath, file), (err) => {
+              if (err) {
+                console.error(`Error deleting file ${file}:`, err);
+              } else {
+                console.log(`Deleted file: ${file}`);
+              }
+            });
+          });
+        });
+        //-----------------End of cleanup
+
+        //------------Send back completely registered user data to user
+        res.send(resultValue);
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(400).send(error);
+      });
+  }
+};
+
 module.exports = {
   index,
   login,
@@ -265,4 +412,5 @@ module.exports = {
   phonesignup,
   otp,
   register,
+  editProfile,
 };

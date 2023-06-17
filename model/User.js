@@ -58,6 +58,7 @@ const userSchema = new Schema({
   related: {
     type: Object,
     required: false,
+    default: {},
   },
   status: {
     type: String,

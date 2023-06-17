@@ -12,9 +12,11 @@ const {
   phonesignup,
   otp,
   register,
+  editProfile
 } = require("../controllers/authController");
 
 const upload = multer({ dest: "uploads/" });
+const upload1 = multer({ dest: "uploads1/" });
 
 router.get("/", index); //index
 
@@ -32,5 +34,6 @@ router.post("/logout", logout);
 router.post("/phone", phonesignup);
 router.post("/otp", otp);
 router.post("/register", upload.array("image"), register);
+router.post("/editprofile", upload1.array("image"), editProfile);
 
 module.exports = router;
