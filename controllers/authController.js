@@ -249,7 +249,7 @@ const register = async (req, res) => {
       //-----------------End of cleanup
 
       //------------Send back completely registered user data to user
-      res.send(savedinfo);
+      res.send(savedinfo, "yoooooooo");
     })
     .catch((error) => {
       console.log(error);
@@ -284,42 +284,42 @@ const editProfile = async (req, res) => {
     language,
   } = req.body;
 
+
   const dataSaveMethod = async (pictures) => {
     try {
-      const user = await User.findOne({ email: email });
+      const user = await User.findOneAndUpdate({ email: email }, {
+        name: name,
+        photo: pictures,
+        dob: date,
+        related: {
+          relationship: relationship,
+          children: children,
+          marragePlans: plan,
+          biography: biography,
+          description: description,
+          blood: blood,
+          genotype: genotype,
+          skin: skin,
+          religion: practice,
+          pray: pray,
+          alcohol: alcohol,
+          smoke: smoke,
+          interest: interest,
+          personality: personality,
+          education: education,
+          ethnicity: ethnicity,
+          language: language,
+        },
+        gender: gender,
+        height: height,
+        profession: profession,
+        email: email,
+      });
       if (user) {
-        user.name = name;
-        if (date) {
-          user.dob = date;
-        }
-        user.related.relationship = relationship;
-        user.related.children = children;
-        console.log("user.related call: ", user.related);
-        user.related.marragePlans = plan;
-        user.related.biography = biography;
-        user.related.description = description;
-        user.related.blood = blood;
-        user.related.genotype = genotype;
-        user.related.skin = skin;
-        user.related.religion = practice;
-        user.related.pray = pray;
-        user.related.alcohol = alcohol;
-        user.related.smoke = smoke;
-        user.related.interest = interest;
-        user.related.personality = personality;
-        user.related.education = education;
-        user.related.ethnicity = ethnicity;
-        user.related.language = language;
-        user.gender = gender;
-        user.height = height;
-        user.profession = profession;
-        user.email = email;
-        if (pictures) {
-          user.photo = pictures;
-        }
+        // const savedinfo = await user.save();
+        // console.log(savedinfo);
+        res.status(200).send(user);
 
-        const savedinfo = await user.save();
-        console.log(savedinfo);
         return savedinfo;
       } else {
         res.status(400).send("No User specified.");
@@ -370,7 +370,7 @@ const editProfile = async (req, res) => {
             resultValue = response1;
           })
           .catch((err) => res.status(400).send(err));
-          
+
         //----------Clear files in upload folder to prevent memory overload
 
         const folderPath = "uploads1";
