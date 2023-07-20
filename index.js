@@ -4,11 +4,13 @@ const chatRoutes = require('./routes/chat');
 
 const userActionsRoute = require("./routes/userActions");
 const app = express();
+const Conversation = require('./model/conversation');
+// const mongoose = require('mongoose');
 const mongoose = require("mongoose");
 const server = require('http').Server(app);
 const io = require('socket.io')(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://halal-three.vercel.app",
     methods: ["GET", "POST"]
   }
 });
@@ -85,14 +87,41 @@ io.on('connection', (socket) => {
   socket.on('message', async (data) => {
     console.log('Received message:', data);
 
-    // Find the recipient's socket and emit the message
-    const recipientSocket = Object.values(io.sockets.sockets).find(
-      (socket) => socket.userId === data.recipientId
-    );
+    const { senderId, recipientId, content } = data;
 
-    if (recipientSocket) {
-      recipientSocket.emit('message', data);
+    try {
+      // Check if the conversation between the sender and recipient exists
+      let conversation = await Conversation.findOne({
+        participants: { $all: [senderId, recipientId] }
+      });
+
+      if (!conversation) {
+        // If conversation doesn't exist, create a new one
+        conversation = new Conversation({
+          participants: [senderId, recipientId],
+          messages: []
+        });
+      }
+
+      // Add the new message to the conversation's messages array
+      conversation.messages.push({ sender: senderId, content });
+      await conversation.save();
+
+      // Emit the updated conversation object to both sender and recipient
+      socket.emit('message', conversation);
+      socket.to(recipientId).emit('message', conversation);
+    } catch (error) {
+      console.error('Error saving message to the database:', error);
     }
+
+    // Find the recipient's socket and emit the message
+    // const recipientSocket = Object.values(io.sockets.sockets).find(
+    //   (socket) => socket.userId === data.recipientId
+    // );
+
+    // if (recipientSocket) {
+    //   recipientSocket.emit('message', data);
+    // }
   });
 
   // Handle client disconnection
