@@ -170,6 +170,7 @@ const register = async (req, res) => {
     height,
     marital_status,
     location,
+    current_location,
     profession,
     email,
     phone_no,
@@ -215,6 +216,7 @@ const register = async (req, res) => {
         user.height = height;
         user.marital_status = marital_status;
         user.location = location;
+        user.current_location = current_location;
         user.profession = profession;
         user.phone_no = phone_no;
         user.photo = pictures;

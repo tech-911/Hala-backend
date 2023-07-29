@@ -28,6 +28,10 @@ const userSchema = new Schema({
     type: String,
     required: false,
   },
+   current_location: {
+    type: String,
+    required: false,
+  },
   profession: {
     type: String,
     required: false,
