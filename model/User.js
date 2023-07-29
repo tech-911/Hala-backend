@@ -8,6 +8,7 @@ const userSchema = new Schema({
     min: 4,
     max: 255,
   },
+  conversations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }],
   dob: {
     type: Date,
     required: false,

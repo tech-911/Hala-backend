@@ -23,7 +23,7 @@ const path = require("path");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const index = (req, res) => {
   console.log("a get request was made to /");
-  res.send("Welcome to halal match making 💗");
+  res.status(201).send("Welcome to halal match making 💗");
 };
 
 const login = async (req, res) => {
@@ -44,7 +44,7 @@ const login = async (req, res) => {
   const token = jwt.sign({ _id: user._id }, jwtSecretKey);
   user.token = token;
   await user.save();
-  res.send(user);
+  res.status(201).send(user);
 };
 const logout = async (req, res) => {
   //===============validation===============
@@ -61,7 +61,7 @@ const logout = async (req, res) => {
 
   user.token = null;
   await user.save();
-  res.send(user);
+  res.status(201).send(user);
 };
 const googlesignup = async (req, res) => {
   const { token } = req.body;
@@ -78,7 +78,7 @@ const googlesignup = async (req, res) => {
     const user = await User.findOne({ email: payload.email });
     if (user) {
       console.log(user);
-      res.send(user);
+      res.status(201).send(user);
     } else {
       try {
         const user = await new User({
@@ -88,7 +88,7 @@ const googlesignup = async (req, res) => {
         });
         const saveValue = await user.save();
         console.log(saveValue);
-        res.send(saveValue);
+        res.status(201).send(saveValue);
       } catch (err) {
         console.log(err);
         res.status(400).send(err);
@@ -100,7 +100,7 @@ const googlesignup = async (req, res) => {
   }
 };
 const facebooksignup = async (req, res) => {
-  res.send(req.user || req.saveValue);
+  res.status(201).send(req.user || req.saveValue);
 };
 
 const phonesignup = async (req, res) => {
@@ -108,7 +108,7 @@ const phonesignup = async (req, res) => {
   const check = await User.findOne({ phone_no: phone_no });
   if (check) {
     console.log(check);
-    return res.send({ message: "user exist", check });
+    return res.status(201).send({ message: "user exist", check });
   }
   const user = await User.findOne({ "phone_key.otp": otp });
   if (!user) return res.status(400).send("Wrong OTP");
@@ -118,7 +118,7 @@ const phonesignup = async (req, res) => {
   user.phone_no = phone_no;
   user.phone_key = {};
   const saveValue = await user.save();
-  res.send("success...");
+  res.status(201).send("success...");
 };
 
 const otp = async (req, res) => {
@@ -126,7 +126,7 @@ const otp = async (req, res) => {
   const user = await User.findOne({ phone_no: phone_no });
   if (user) {
     console.log(user);
-    res.send({ message: "user exist", user });
+    res.status(201).send({ message: "user exist", user });
   } else {
     let otp = "";
     for (let i = 0; i < 6; i++) {
@@ -153,7 +153,7 @@ const otp = async (req, res) => {
       })
       .then((response) => {
         console.log(response);
-        res.send(`OTP sent to ${phone_no}. OTP expires in 6 minuites`);
+        res.status(201).send(`OTP sent to ${phone_no}. OTP expires in 6 minuites`);
       })
       .catch((err) => {
         console.log(err);
@@ -251,7 +251,7 @@ const register = async (req, res) => {
       //-----------------End of cleanup
 
       //------------Send back completely registered user data to user
-      res.send(savedinfo);
+      res.status(201).send(savedinfo);
     })
     .catch((error) => {
       console.log(error);
@@ -286,42 +286,42 @@ const editProfile = async (req, res) => {
     language,
   } = req.body;
 
+
   const dataSaveMethod = async (pictures) => {
     try {
-      const user = await User.findOne({ email: email });
+      const user = await User.findOneAndUpdate({ email: email }, {
+        name: name,
+        photo: pictures,
+        dob: date,
+        related: {
+          relationship: relationship,
+          children: children,
+          marragePlans: plan,
+          biography: biography,
+          description: description,
+          blood: blood,
+          genotype: genotype,
+          skin: skin,
+          religion: practice,
+          pray: pray,
+          alcohol: alcohol,
+          smoke: smoke,
+          interest: interest,
+          personality: personality,
+          education: education,
+          ethnicity: ethnicity,
+          language: language,
+        },
+        gender: gender,
+        height: height,
+        profession: profession,
+        email: email,
+      });
       if (user) {
-        user.name = name;
-        if (date) {
-          user.dob = date;
-        }
-        user.related.relationship = relationship;
-        user.related.children = children;
-        console.log("user.related call: ", user.related);
-        user.related.marragePlans = plan;
-        user.related.biography = biography;
-        user.related.description = description;
-        user.related.blood = blood;
-        user.related.genotype = genotype;
-        user.related.skin = skin;
-        user.related.religion = practice;
-        user.related.pray = pray;
-        user.related.alcohol = alcohol;
-        user.related.smoke = smoke;
-        user.related.interest = interest;
-        user.related.personality = personality;
-        user.related.education = education;
-        user.related.ethnicity = ethnicity;
-        user.related.language = language;
-        user.gender = gender;
-        user.height = height;
-        user.profession = profession;
-        user.email = email;
-        if (pictures) {
-          user.photo = pictures;
-        }
+        // const savedinfo = await user.save();
+        // console.log(savedinfo);
+        res.status(200).send(user);
 
-        const savedinfo = await user.save();
-        console.log(savedinfo);
         return savedinfo;
       } else {
         res.status(400).send("No User specified.");
@@ -341,7 +341,7 @@ const editProfile = async (req, res) => {
   if (!req.files || req.files.length === 0) {
     dataSaveMethod()
       .then((value) => console.log("saved edit without pic: ", value))
-      .then((value2) => res.send(value2))
+      .then((value2) => res.status(201).send(value2))
       .catch((err) => res.status(400).send(err));
   } else {
     const promises = req.files.map((file) => {
@@ -372,7 +372,7 @@ const editProfile = async (req, res) => {
             resultValue = response1;
           })
           .catch((err) => res.status(400).send(err));
-          
+
         //----------Clear files in upload folder to prevent memory overload
 
         const folderPath = "uploads1";
@@ -396,13 +396,36 @@ const editProfile = async (req, res) => {
         //-----------------End of cleanup
 
         //------------Send back completely registered user data to user
-        res.send(resultValue);
+        res.status(201).send(resultValue);
       })
       .catch((error) => {
         console.log(error);
         res.status(400).send(error);
       });
   }
+};
+
+const getProfile = async (req, res) => {
+
+  const dataSaveMethod = async (pictures) => {
+    try {
+      const user = await User.findOne({ email: req.query.email });
+      if (user) {
+        // const savedinfo = await user.save();
+        // console.log(savedinfo);
+        res.status(200).send(user);
+
+      } else {
+        res.status(400).send("No User specified.");
+      }
+    } catch (err) {
+      console.log(err);
+      res.status(400).send(err);
+    }
+  };
+
+  dataSaveMethod()
+
 };
 
 module.exports = {
@@ -415,4 +438,5 @@ module.exports = {
   otp,
   register,
   editProfile,
+  getProfile
 };

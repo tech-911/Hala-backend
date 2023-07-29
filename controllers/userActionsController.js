@@ -7,7 +7,7 @@ const GetAllUsersByGender = async (req, res) => {
     if (err) {
       res.status(400).send(err);
     } else {
-      res.send(docs);
+      res.status(201).send(docs);
     }
   });
 };
@@ -19,7 +19,8 @@ const Reacted = async (req, res) => {
   if (actionResponse) {
     if (action === "like") {
       if (actionResponse.liked.includes(reactEmail)) {
-        return res.status(400).send({ message: "user already liked" });
+        // console.log("haha")
+        return res.status(201).send({ message: "user already liked" });
       } else {
         if (actionResponse.unlike.includes(reactEmail)) {
           const index = actionResponse.unlike.indexOf(reactEmail);
@@ -29,12 +30,12 @@ const Reacted = async (req, res) => {
           actionResponse.liked.push(reactEmail);
           actionResponse.save();
           console.log(actionResponse);
-          res.send({ message: "reacted sucessfully" });
+          res.status(201).send({ message: "reacted sucessfully" });
         } else {
           actionResponse.liked.push(reactEmail);
           actionResponse.save();
           console.log(actionResponse);
-          res.send({ message: "reacted sucessfully" });
+          res.status(201).send({ message: "reacted sucessfully" });
         }
       }
     } else if (action === "unlike") {
@@ -49,12 +50,12 @@ const Reacted = async (req, res) => {
           actionResponse.unlike.push(reactEmail);
           actionResponse.save();
           console.log(actionResponse);
-          res.send({ message: "reacted sucessfully" });
+          res.status(201).send({ message: "reacted sucessfully" });
         } else {
           actionResponse.unlike.push(reactEmail);
           actionResponse.save();
           console.log(actionResponse);
-          res.send({ message: "reacted sucessfully" });
+          res.status(201).send({ message: "reacted sucessfully" });
         }
       }
     } else {
@@ -70,7 +71,7 @@ const Reacted = async (req, res) => {
         });
         const saveValue = await userActionRes.save();
         console.log(saveValue);
-        res.send(saveValue);
+        res.status(201).send(saveValue);
       } catch (err) {
         console.log(err);
         res.status(400).send(err);
@@ -84,7 +85,7 @@ const Reacted = async (req, res) => {
         });
         const saveValue = await userActionRes.save();
         console.log(saveValue);
-        res.send(saveValue);
+        res.status(201).send(saveValue);
       } catch (err) {
         console.log(err);
         res.status(400).send(err);
@@ -108,7 +109,7 @@ const getLikedMeData = async (req, res) => {
       const userThatLikedMe = users.filter((value) => {
         return followers.includes(value.email);
       });
-      res.send(userThatLikedMe);
+      res.status(201).send(userThatLikedMe);
     } catch (err) {
       res.status(400).send(err);
     }
@@ -126,7 +127,7 @@ const getLikedData = async (req, res) => {
     const userThatILiked = users.filter((value) => {
       return iliked.liked.includes(value.email);
     });
-    res.send(userThatILiked);
+    res.status(201).send(userThatILiked);
   } catch (err) {
     res.status(400).send(err);
   }
